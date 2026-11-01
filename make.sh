@@ -1,1 +1,0 @@
-g++ RetroScale.cpp FileFunctions.cpp Colors.cpp -lpng -o build/retroscale.exe
