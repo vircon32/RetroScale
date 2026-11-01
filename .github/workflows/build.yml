@@ -1,0 +1,121 @@
+name: Build RetroScale
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-2025
+            artifact: retroscale-windows-x64
+          - name: Ubuntu x64
+            os: ubuntu-24.04
+            artifact: retroscale-ubuntu-x64
+          - name: macOS ARM64
+            os: macos-15
+            artifact: retroscale-macos-arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install static libraries (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: vcpkg install libpng:x64-windows-static
+
+      - name: Install static libraries (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpng-dev zlib1g-dev
+
+      - name: Install static libraries (macOS)
+        if: runner.os == 'macOS'
+        run: brew install libpng zlib
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        # Use the static MSVC runtime to match the vcpkg libraries.
+        run: >-
+          cmake -S . -B build -A x64
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          -DVCPKG_TARGET_TRIPLET=x64-windows-static
+
+      - name: Configure (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DPNG_LIBRARY=/usr/lib/x86_64-linux-gnu/libpng16.a \
+            -DZLIB_LIBRARY=/usr/lib/x86_64-linux-gnu/libz.a
+
+      - name: Configure (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          PNG_PREFIX="$(brew --prefix libpng)"
+          ZLIB_PREFIX="$(brew --prefix zlib)"
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DPNG_LIBRARY="$PNG_PREFIX/lib/libpng16.a" \
+            -DPNG_PNG_INCLUDE_DIR="$PNG_PREFIX/include" \
+            -DZLIB_LIBRARY="$ZLIB_PREFIX/lib/libz.a" \
+            -DZLIB_INCLUDE_DIR="$ZLIB_PREFIX/include"
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Verify no external PNG dependency (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          ldd build/retroscale > build/dependencies.txt
+          cat build/dependencies.txt
+          if grep -E 'libpng|libz\.so|not found' build/dependencies.txt; then
+            echo 'Unexpected dynamic dependency on libpng or zlib, or missing library' >&2
+            exit 1
+          fi
+
+      - name: Verify no external PNG dependency (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          otool -L build/retroscale > build/dependencies.txt
+          cat build/dependencies.txt
+          if grep -E 'libpng|/opt/homebrew/|/usr/local/' build/dependencies.txt; then
+            echo 'Unexpected dynamic dependency on libpng or Homebrew libraries' >&2
+            exit 1
+          fi
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item build/Release/retroscale.exe dist/
+          Compress-Archive -Path dist/* -DestinationPath '${{ matrix.artifact }}.zip'
+
+      - name: Package (Ubuntu/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        # A tar archive preserves the executable permission when downloaded.
+        run: |
+          mkdir -p dist
+          cp build/retroscale dist/
+          tar -czf '${{ matrix.artifact }}.tar.gz' -C dist .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            ${{ matrix.artifact }}.zip
+            ${{ matrix.artifact }}.tar.gz
+          if-no-files-found: error

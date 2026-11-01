@@ -55,13 +55,14 @@ static bool IsHEXColorLine( const string& TextLine )
 
 // ---------------------------------------------------------
 
-// function to read a 32-bit value at a certain position from
-// RIFF palette files, taking into account little endian format
-static uint32_t ReadPaletteLittleEndian( const string& FileData, size_t Offset, size_t NumberOfBytes )
+// function to read multy-byte integer value at a certain position
+// from RIFF palette files, so that it is always read in little
+// endian format regardless of the host machine endianness
+static uint32_t ReadLittleEndianInteger( const string& FileData, size_t Offset, size_t NumberOfBytes )
 {
     uint32_t Value = 0;
     
-    // callers validate the field's bounds before reading it
+    // callers must validate the field's bounds before reading it
     for( size_t i = 0; i < NumberOfBytes; i++ )
       Value |= static_cast< uint32_t >( static_cast< uint8_t >( FileData[ Offset + i ] ) ) << ( i * 8 );
     
@@ -221,7 +222,7 @@ static void LoadRIFFPaletteFile( const string& FileData, RGBColorVector& Palette
         FileData.compare( 8, 4, "PAL " ) != 0 )
       throw runtime_error( "The palette file does not have a valid RIFF PAL format" );
     
-    if( ReadPaletteLittleEndian( FileData, 4, 4 ) != FileData.size() - 8 )
+    if( ReadLittleEndianInteger( FileData, 4, 4 ) != FileData.size() - 8 )
       throw runtime_error( "The RIFF palette file size does not match its header" );
     
     size_t Offset = 12;
@@ -233,7 +234,7 @@ static void LoadRIFFPaletteFile( const string& FileData, RGBColorVector& Palette
           throw runtime_error( "Incomplete chunk header in RIFF palette file" );
         
         bool IsDataChunk = FileData.compare( Offset, 4, "data" ) == 0;
-        size_t ChunkSize = ReadPaletteLittleEndian( FileData, Offset + 4, 4 );
+        size_t ChunkSize = ReadLittleEndianInteger( FileData, Offset + 4, 4 );
         Offset += 8;
         
         if( ChunkSize > FileData.size() - Offset )
@@ -244,10 +245,10 @@ static void LoadRIFFPaletteFile( const string& FileData, RGBColorVector& Palette
             if( FoundColors || ChunkSize < 4 )
               throw runtime_error( "Invalid data chunk in RIFF palette file" );
             
-            if( ReadPaletteLittleEndian( FileData, Offset, 2 ) != 0x0300 )
+            if( ReadLittleEndianInteger( FileData, Offset, 2 ) != 0x0300 )
               throw runtime_error( "Unsupported version in RIFF palette file" );
             
-            size_t NumberOfColors = ReadPaletteLittleEndian( FileData, Offset + 2, 2 );
+            size_t NumberOfColors = ReadLittleEndianInteger( FileData, Offset + 2, 2 );
             
             if( NumberOfColors < 1 || NumberOfColors > 256 || ChunkSize != 4 + NumberOfColors * 4 )
               throw runtime_error( "Invalid color count or data size in RIFF palette file" );
