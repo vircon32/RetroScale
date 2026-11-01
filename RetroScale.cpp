@@ -39,7 +39,7 @@ int main( int NumberOfArguments, char* Arguments[] )
     {
         cerr << "Usage: retroscale <input.png> <output.png> <palette> <reduction>" << endl;
         cerr << "- Image files are read and saved in PNG format" << endl;
-        cerr << "- Palette files are red in PAL JASC format" << endl;
+        cerr << "- Palette files are detected as JASC-PAL, RIFF PAL, ACT or HEX" << endl;
         cerr << "- Reduction factor is an integer (e.g: 3 will reduce the image by 3x)" << endl;
         cerr << "- Transparency or alpha channel are not supported" << endl;
         

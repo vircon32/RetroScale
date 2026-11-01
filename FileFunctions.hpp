@@ -48,7 +48,7 @@ void SaveIndexedPNGFile
     const PaletteIndexMatrix& ImageColorIndices
 );
 
-// loads a palette file in PAL format and
+// detects and loads a JASC-PAL, RIFF PAL, ACT or HEX palette file and
 // stores it into a vector of RGB colors
 void LoadPaletteFile
 (
