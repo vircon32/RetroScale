@@ -10,7 +10,8 @@ find_package(PNG REQUIRED)
 # define our final executable, and compile it with C++11
 add_executable(retroscale
     Colors.cpp
-    FileFunctions.cpp
+    PaletteFileIO.cpp
+    PNGFileIO.cpp
     RetroScale.cpp)
     
 target_compile_features(retroscale PRIVATE cxx_std_11)

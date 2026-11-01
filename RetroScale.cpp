@@ -20,7 +20,8 @@
     
     // include project headers
     #include "Colors.hpp"
-    #include "FileFunctions.hpp"
+    #include "PNGFileIO.hpp"
+    #include "PaletteFileIO.hpp"
     
     // define used namespaces
     using namespace std;

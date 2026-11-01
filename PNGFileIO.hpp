@@ -1,10 +1,9 @@
 // *********************************************************
     // start include guard
-    #ifndef FILEFUNCTIONS_HPP
-    #define FILEFUNCTIONS_HPP
+    #ifndef PNGFILEIO_HPP
+    #define PNGFILEIO_HPP
 
     // include standard C/C++ headers
-    #include <vector>       // [ C++ STL ] Vectors
     #include <string>       // [ C++ STL ] Strings
     
     // include project headers
@@ -13,21 +12,7 @@
 
 
 // ========================================================
-//      COMMON TYPES USED WITH COLORS AND PALETTES
-// ========================================================
-
-
-// types for 1D and 2D RGBColor vectors
-typedef std::vector< RGBColor > RGBColorVector;
-typedef std::vector< RGBColorVector > RGBColorMatrix;
-
-// the same but expressed as indices from a palette
-typedef std::vector< uint8_t > PaletteIndexVector;
-typedef std::vector< PaletteIndexVector > PaletteIndexMatrix;
-
-
-// ========================================================
-//      FUNCTIONS TO LOAD AND SAVE FROM FILE
+//      FUNCTIONS TO LOAD AND SAVE FROM PNG FILES
 // ========================================================
 
 
@@ -46,14 +31,6 @@ void SaveIndexedPNGFile
     const std::string& PNGFilePath,
     const RGBColorVector& Palette,
     const PaletteIndexMatrix& ImageColorIndices
-);
-
-// detects and loads a JASC-PAL, RIFF PAL, ACT or HEX palette file and
-// stores it into a vector of RGB colors
-void LoadPaletteFile
-(
-    const std::string& PaletteFilePath,
-    RGBColorVector& PaletteColors
 );
 
 
